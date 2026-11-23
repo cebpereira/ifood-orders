@@ -150,6 +150,23 @@ A API usa **dois formatos** de corpo de erro, e o cliente aceita ambos:
 
 Toda resposta traz `x-request-id` (igual a `X-iFood-Request-Id`). Ele entra nos logs ao lado do `correlation_id` local, para cruzar com o suporte do iFood.
 
+## Ações pelo sistema (validação de ponta a ponta)
+
+Em 23/11/2026, às 19:13 UTC, três pedidos novos foram movidos **pelo painel**, passando pelo `SendOrderActionJob` e pelo polling real:
+
+| Pedido | Ação | 202 recebido | Fechada pelo evento | Espera |
+|---|---|---|---|---|
+| #2216 | confirm | 19:13:56.787 | CFM, 19:14:02.101 | 5 s |
+| #2213 | requestCancellation `503` | 19:14:16.917 | CAN, 19:14:32.152 | 15 s |
+| #2216 | startPreparation | 19:14:32.231 | PRS, 19:15:02.172 | 30 s |
+| #2216 | readyToPickup | 19:15:14.630 | RTP, 19:15:32.209 | 18 s |
+| #2216 | dispatch | 19:15:44.618 | DSP, 19:16:02.263 | 18 s |
+| #4870 | nenhuma | — | CAR `902` + CAN pelo `SCHEDULER` | 8 min após o PLC |
+
+- O iFood gera o evento em menos de 1 s depois do 202. A espera vista no painel vem do intervalo de 30 s do polling. Com webhook, ela cairia para perto de zero.
+- O DDCR apareceu de novo logo depois do confirm de um pedido de delivery. É um comportamento consistente da API de teste.
+- Nenhuma ação expirou nem gerou CARF.
+
 ## Pendências
 
 - [ ] Observar um CARF real: não ocorreu em nenhum dos cenários testados

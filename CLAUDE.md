@@ -20,6 +20,7 @@ Always go through `make`, since the local PHP has no `pdo_pgsql`/`redis`.
 | `make ci` | `lint` + `stan` + `test`, the same checks as CI. Run it before declaring work done |
 | `make test args="--filter=Polling"` | Pest against the `ifood_orders_test` database |
 | `make fix` | Pint |
+| `make demo` | Synthetic demo orders (no iFood credentials needed) |
 | `make reload` | Restart Horizon workers and the scheduler after code changes (workers keep old code in memory) |
 | `make shell` / `make logs s=horizon` | Debugging |
 | `npm run typecheck` / `npm run build` | Front-end checks (also in CI) |
@@ -30,10 +31,14 @@ Always go through `make`, since the local PHP has no `pdo_pgsql`/`redis`.
 app/Ifood/Client/      HTTP client, token cache, 429 handling, correlation id
 app/Ifood/Enums/       EventCode, OrderStatus
 app/Ifood/Orders/      OrderStateMachine, applying events to orders
+app/Ifood/Actions/     OrderActionService: request, resolve by event, expire
 app/Models/            IfoodEvent, Order, OrderTransition, OrderAction
 app/Jobs/              ProcessIfoodEventJob, FetchOrderDetailsJob, SendOrderActionJob
-app/Console/Commands/  ifood:poll, ifood:retry
+app/Console/Commands/  ifood:poll, ifood:retry, ifood:expire-actions
+app/Http/              OrderController (panel), OrderActionController, resources
+database/seeders/      DemoOrdersSeeder (`make demo`), synthetic orders through the real job
 resources/js/pages/    Inertia pages (orders board/list)
+resources/js/components/orders/  ticket, board, list, sheet, actions, deadline bar
 tests/Fixtures/ifood/  JSON fixtures for Http::fake
 ```
 
@@ -49,7 +54,7 @@ Tables: `ifood_events` (raw events, `event_id` unique), `orders` (current state,
 3. **Out-of-order events** (`app/Ifood/Orders/OrderStateMachine.php`, pure and unit tested). Statuses are monotonic, so the status is decided by **rank only**: the highest status seen wins, whatever the arrival order. Skips are valid (DSP straight from CONFIRMED was accepted by the real API). `CONCLUDED`/`CANCELLED` are terminal: a CFM after CAN never reopens an order (`order_terminal`). A lower or equal rank is `not_forward`. CAN applies from any non-terminal status. `createdAt` still drives the timeline, `placed_at` and the 8-minute deadline, even when the PLC arrives last. Every event writes one `order_transitions` row (unique per event) with `applied` and `reason`; ignored events also get `ifood_events.status = ignored` with the same reason.
 4. **CAR/CARF** do not change the order status (`no_status_change`, event still `processed`). A CAR/CARF for an order not seen yet waits (job released) for the status event. They resolve the pending `order_actions` row. CAN is applied even without a prior CAR (observed in practice). Unknown codes (e.g. DDCR) are stored and acked but never block the queue.
 5. **Order details** (`FetchOrderDetailsJob`, unique per order, dispatched when an order is first seen) may return 404 right after PLC: released with backoff 5s, 10s, 20s… up to 5 min, for 10 minutes, then `details_error`.
-6. **Actions return 202.** The result only exists once the matching event arrives. Until then the action is pending. An invalid action can be dropped silently (no event, no CARF), so pending actions **expire after a timeout**.
+6. **Actions return 202.** `order_actions`: pending → sent (202) → confirmed (matching event, or the order passed the target status) | failed (4xx, CARF, order cancelled first) | expired (`ifood:expire-actions`, 2 min). A CAR does not settle a cancellation (a CARF may follow); the CAN does. A partial unique index allows one open action per order. `OrderActionType::allowedFor()` is checked before calling iFood, because iFood accepts invalid actions with 202 and drops them silently.
 7. **Token**: cached until shortly before it expires, never requested per call. **429**: respect `X-RateLimit-Reset`.
 8. **Timestamps keep milliseconds**: columns are `timestampTz(…, 3)` and models use `$dateFormat = 'Y-m-d H:i:s.vP'` (CAR→CAN can be ~150ms apart). Keep both when adding tables.
 
@@ -63,6 +68,7 @@ Anything about the iFood API that was confirmed or contradicted with real creden
 - Logs go through the `ifood` channel (JSON lines in `storage/logs/ifood-*.log`). `App\Support\CorrelationId` keeps the id in Laravel `Context`, so it reaches every log record and travels with queued jobs.
 - Do not add `env_file` to `compose.yaml`: Laravel reads `.env` itself, and injected variables would override the forced test values in `phpunit.xml`.
 - Tests: Pest, `Http::fake()` with fixtures from `tests/Fixtures/ifood`, `Http::preventStrayRequests()`. Feature tests run on Postgres, not SQLite, because uniqueness and locking behaviour matter here.
+- Panel design: kitchen-rail palette (`--basil`, `--saffron`, `--chili` on `--paper`), Atkinson Hyperlegible Next, tabular numbers. The one bold element is the draining confirmation-deadline bar; keep everything else quiet (no shadows, no all-caps labels). UI copy in PT-BR, sentence case.
 - Front-end: shadcn components in `resources/js/components/ui` are generated; customise them by wrapping, not by editing them, unless that is unavoidable.
 
 ## Rules
@@ -80,7 +86,7 @@ Anything about the iFood API that was confirmed or contradicted with real creden
 - [x] 2. iFood client: token cache, 429, correlation-id logs
 - [x] 3. Event intake: polling every 30s, unique event id, ack after persisting, one job per event
 - [x] 4. Orders and state machine, details fetch with 404 backoff
-- [ ] Panel: board (columns by status) + list, auto-refresh
-- [ ] 5. Actions (confirm, start preparation, ready, dispatch, cancel), CARF, 8-minute deadline alert
-- [ ] 6. Test scenarios: duplicate, out of order, 404, CARF, 429, late event
-- [ ] 7. README (PT-BR) with decisions, how to run, screenshots/GIF
+- [x] Panel: board (columns by status) + list, auto-refresh, detail sheet with event timeline
+- [x] 5. Actions (confirm, start preparation, ready, dispatch, cancel), CARF, 8-minute deadline alert
+- [x] 6. Test scenarios: duplicate, out of order, 404, CARF, 429, late event
+- [x] 7. README (PT-BR) with decisions, how to run, screenshots (GIF of real orders pending)
