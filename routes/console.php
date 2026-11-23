@@ -16,3 +16,8 @@ Schedule::command('ifood:retry')
     ->onOneServer();
 
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
+
+Schedule::command('ifood:expire-actions')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();

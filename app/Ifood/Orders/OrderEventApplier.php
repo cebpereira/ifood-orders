@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ifood\Orders;
 
+use App\Ifood\Actions\OrderActionService;
 use App\Ifood\Enums\EventCode;
 use App\Ifood\Enums\OrderStatus;
 use App\Ifood\Exceptions\OrderNotYetKnownException;
@@ -20,7 +21,10 @@ use Illuminate\Support\Facades\Log;
  */
 final class OrderEventApplier
 {
-    public function __construct(private readonly OrderStateMachine $machine) {}
+    public function __construct(
+        private readonly OrderStateMachine $machine,
+        private readonly OrderActionService $actions,
+    ) {}
 
     public function apply(IfoodEvent $event, EventCode $code): Decision
     {
@@ -62,6 +66,8 @@ final class OrderEventApplier
                 'occurred_at' => $event->event_created_at,
             ],
         );
+
+        $this->actions->resolveFromEvent($order, $event, $decision->applies);
 
         if (! $decision->applies && ! $decision->isInformational()) {
             Log::channel('ifood')->notice('ifood.order.transition_ignored', [
