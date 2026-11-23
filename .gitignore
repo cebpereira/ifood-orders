@@ -30,3 +30,4 @@ Thumbs.db
 /Prompt.md
 /storage/framework/cache/phpstan
 /.claude/settings.local.json
+/.playwright-mcp

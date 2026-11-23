@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Current state of an iFood order, derived from its events.
@@ -73,6 +74,18 @@ final class Order extends Model
     public function transitions(): HasMany
     {
         return $this->hasMany(OrderTransition::class)->orderBy('occurred_at')->orderBy('id');
+    }
+
+    /** @return HasMany<OrderAction, $this> */
+    public function actions(): HasMany
+    {
+        return $this->hasMany(OrderAction::class)->latest('requested_at');
+    }
+
+    /** @return HasOne<OrderAction, $this> */
+    public function openAction(): HasOne
+    {
+        return $this->hasOne(OrderAction::class)->open();
     }
 
     /** @return HasMany<IfoodEvent, $this> */

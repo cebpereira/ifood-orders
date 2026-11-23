@@ -10,7 +10,7 @@ NPM     := $(COMPOSE) run --rm --no-deps vite npm
 PHP_DB  := $(COMPOSE) run --rm app
 
 .PHONY: help setup build up dev down restart logs shell \
-        install migrate fresh test lint fix stan ci assets poll reload
+        install migrate fresh test lint fix stan ci assets poll reload demo
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -74,6 +74,9 @@ stan: ## Static analysis (PHPStan/Larastan)
 	$(PHP) ./vendor/bin/phpstan analyse --memory-limit=1G
 
 ci: lint stan test ## Run what CI runs
+
+demo: ## Add synthetic demo orders to the panel (no iFood credentials needed)
+	$(ARTISAN) db:seed --class=DemoOrdersSeeder --force
 
 poll: ## Run one iFood polling cycle manually
 	$(ARTISAN) ifood:poll
