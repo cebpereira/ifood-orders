@@ -1,0 +1,6 @@
+{
+    "error": {
+        "code": "OrderNotFound",
+        "message": "The requested order does not seem to exist."
+    }
+}

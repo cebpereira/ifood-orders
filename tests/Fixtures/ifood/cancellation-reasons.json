@@ -1,0 +1,4 @@
+[
+    { "cancelCodeId": "501", "description": "Problemas de sistema na loja" },
+    { "cancelCodeId": "503", "description": "Item indisponível/desatualizado" }
+]

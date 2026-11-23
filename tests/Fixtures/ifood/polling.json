@@ -1,0 +1,33 @@
+[
+    {
+        "id": "a1000000-0000-4000-8000-000000000001",
+        "code": "PLC",
+        "fullCode": "PLACED",
+        "orderId": "0a000000-0000-4000-8000-0000000000aa",
+        "merchantId": "00000000-0000-0000-0000-000000000001",
+        "createdAt": "2026-11-23T18:12:01.307Z",
+        "salesChannel": "IFOOD"
+    },
+    {
+        "id": "a1000000-0000-4000-8000-000000000002",
+        "code": "CFM",
+        "fullCode": "CONFIRMED",
+        "orderId": "0a000000-0000-4000-8000-0000000000aa",
+        "merchantId": "00000000-0000-0000-0000-000000000001",
+        "createdAt": "2026-11-23T18:17:39.982Z",
+        "salesChannel": "IFOOD",
+        "metadata": {
+            "ORIGIN": "ORDER_API",
+            "appName": "test-app"
+        }
+    },
+    {
+        "id": "a1000000-0000-4000-8000-000000000003",
+        "code": "DDCR",
+        "fullCode": "DELIVERY_DROP_CODE_REQUESTED",
+        "orderId": "0a000000-0000-4000-8000-0000000000aa",
+        "merchantId": "00000000-0000-0000-0000-000000000001",
+        "createdAt": "2026-11-23T18:17:40.446Z",
+        "salesChannel": "IFOOD"
+    }
+]
