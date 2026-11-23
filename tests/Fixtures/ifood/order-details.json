@@ -1,0 +1,22 @@
+{
+    "id": "0a000000-0000-4000-8000-0000000000aa",
+    "displayId": "4374",
+    "createdAt": "2026-11-23T18:12:01.000Z",
+    "category": "FOOD",
+    "orderTiming": "IMMEDIATE",
+    "orderType": "DELIVERY",
+    "isTest": true,
+    "salesChannel": "IFOOD",
+    "merchant": { "id": "00000000-0000-0000-0000-000000000001", "name": "Loja de teste" },
+    "customer": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "name": "Cliente de teste",
+        "phone": { "number": "0000000000" }
+    },
+    "delivery": { "mode": "DEFAULT", "deliveredBy": "MERCHANT" },
+    "items": [
+        { "index": 1, "name": "Produto de teste", "quantity": 2, "unitPrice": 10.5, "totalPrice": 21 }
+    ],
+    "total": { "subTotal": 21, "deliveryFee": 6, "benefits": 0, "additionalFees": 0, "orderAmount": 27 },
+    "payments": { "prepaid": 27, "pending": 0, "methods": [{ "value": 27, "currency": "BRL", "method": "CREDIT", "prepaid": true, "type": "ONLINE" }] }
+}
